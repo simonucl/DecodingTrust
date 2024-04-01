@@ -1,0 +1,10 @@
+model: "hf/mistralai/Mistral-7B-Instruct-v0.1"
+type: CHAT
+conv_template: "mistral"
+
+model_loader: HF
+torch_dtype: BFLOAT16
+quant_file: null
+tokenizer_name: null
+trust_remote_code: true
+use_auth_token: true
