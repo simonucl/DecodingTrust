@@ -1,0 +1,10 @@
+model: "hf/Qwen/Qwen1.5-MoE-A2.7B-Chat"
+type: CHAT
+conv_template: "qwen"
+
+model_loader: HF
+torch_dtype: BFLOAT16
+quant_file: null
+tokenizer_name: null
+trust_remote_code: true
+use_auth_token: true

@@ -587,6 +587,23 @@ register_conv_template(
     )
 )
 
+# Qwen default template
+register_conv_template(
+    Conversation(
+        name="qwen",
+        system="""<|im_start|>system
+- You are a helpful assistant chatbot.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.""",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|im_end|>",
+    )
+)
+
 # MPT default template
 register_conv_template(
     Conversation(
