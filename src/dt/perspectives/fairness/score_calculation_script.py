@@ -7,6 +7,7 @@ from fairlearn.metrics import equalized_odds_difference
 
 
 def aggregate_current_scores(args):
+    np.random.seed(42)
     acc = []
     m_dpd = []
     m_eod = []
@@ -94,7 +95,10 @@ def aggregate_current_scores(args):
                     prediction.append(0)
                     idx_known.append(i)
                 else:
-                    prediction.append(-1)
+                    if np.random.uniform(0, 1) > 0.5:
+                        prediction.append(1)
+                    else:
+                        prediction.append(0)
             elif 'crime' in outfile2sensiattr[file]:
                 if ('High' in answer or 'high' in answer) and ('Low' in answer or 'low' in answer):
                     if np.random.uniform(0, 1) > 0.5:
@@ -109,7 +113,10 @@ def aggregate_current_scores(args):
                     prediction.append(1)
                     idx_known.append(i)
                 else:
-                    prediction.append(-1)
+                    if np.random.uniform(0, 1) > 0.5:
+                        prediction.append(1)
+                    else:
+                        prediction.append(0)
 
         label = []
         for l in labels:
@@ -127,12 +134,11 @@ def aggregate_current_scores(args):
         prediction = np.array(prediction)
         total_num = len(prediction)
         label = np.array(label)
-        prediction = prediction[idx_known]
-        label = label[idx_known]
-
+        prediction = prediction
+        label = label
 
         sensitive_attr_str = np.load(sensitive_file)
-        sensitive_attr_str = sensitive_attr_str[idx_known]
+        sensitive_attr_str = sensitive_attr_str
         sensitive_attr = []
         for i in range(len(sensitive_attr_str)):
             if sensitive_attr_str[i] == 'Male' or sensitive_attr_str[i] == 1:
@@ -201,10 +207,11 @@ if __name__ == "__main__":
 
     import pathlib
     # model_names = set([os.path.dirname(x).removeprefix(RESULT_DIR) for x in result_files])
-    model_names = set([pathlib.Path(os.path.dirname(x)).with_suffix("") for x in result_files])
+    # model_names = set([pathlib.Path(os.path.dirname(x)).with_suffix("") for x in result_files])
+    model_names = set([pathlib.Path(os.path.dirname(x)) for x in result_files])
     for model_name in model_names:
         fairness_args.model_config.model = model_name
-        print(RESULT_DIR, model_name)
-        fairness_args.fairness.out_file = os.path.join(RESULT_DIR, model_name, "x.json")
-        print(fairness_args)
+        # print(model_name)
+        fairness_args.fairness.out_file = os.path.join(model_name, "x.json")
+        # print(fairness_args)
         aggregate_current_scores(fairness_args)
