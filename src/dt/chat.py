@@ -414,8 +414,8 @@ class HFGPU(Chat):
         print('Begin processing dataset', dataset[0])
         processed_dataset = [get_prompt(x) for x in dataset]
         print('End processing dataset', processed_dataset[0])
-        
-        for batch in tqdm(0, len(processed_dataset), self.batch_size, desc="Processing dataset"):
+
+        for batch in tqdm(range(0, len(dataset), self.batch_size)):
             batch_dataset = processed_dataset[batch:batch+self.batch_size]
             
             tokenized_batch = self.tokenizer(batch_dataset, padding=True, return_tensors="pt").to(self.model.device)
