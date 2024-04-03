@@ -297,7 +297,7 @@ class Chat(ABC):
         }).to_dict()
 
 class HFGPU(Chat):
-    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = True, device_map: str = "auto", **kwargs):
+    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, device_map: str = "auto", **kwargs):
         super().__init__(model_name, model_type=kwargs.get("model_type", "chat"), prompt_price=0, completion_price=0)
         torch_dtype = torch.bfloat16 if kwargs.get("torch_dtype", "float32") == "bfloat16" else torch.float16
 
@@ -323,6 +323,12 @@ class HFGPU(Chat):
 
         self.batch_size = 16
 
+    def post_process_generation(self, generation: str):
+        if self.conv_template and self.conv_template.stop_str:
+            return generation[:generation.find(self.conv_template.stop_str)]
+        else:
+            return generation
+        
     def messages_to_prompt(self, messages: Union[List[Dict], str]):
         if isinstance(messages, str):
             return messages  # Override prompt templates / simply use as the prompt for completion model
@@ -427,11 +433,12 @@ class HFGPU(Chat):
             with torch.no_grad():
                 output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1, do_sample=False)
 
-            batch_pred = self.tokenizer.batch_decode(output, skip_special_tokens=True)
+            batch_pred = self.tokenizer.batch_decode(output[tokenized_batch.input_ids.shape[1]:], skip_special_tokens=True)
             print('Batch prediction', batch_pred[0])
 
             for i, x in enumerate(batch_pred):
-                pred = x.lower()
+                gen = x[len(batch_prompt[i]):]
+                pred = gen.lower()
                 label = batch_dataset[i]["label"]
                 option = batch_dataset[i]["option"]
                 if pred.startswith("answer:"):
