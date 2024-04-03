@@ -49,6 +49,7 @@ class Chat(ABC):
             return OpenAIChat(model_name, **kwargs)
         elif model_name.startswith('hf-gpu/'):
             kwargs.pop("api_key")
+            kwargs['batch_size'] = main_config.model_config.batch_size
             return HFGPU(model_name.removeprefix("hf-gpu/").rstrip("/"), **kwargs)
         elif model_name.startswith("hf/"):
             kwargs.pop("api_key")
@@ -297,7 +298,7 @@ class Chat(ABC):
         }).to_dict()
 
 class HFGPU(Chat):
-    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, device_map: str = "auto", **kwargs):
+    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, device_map: str = "auto", batch_size: int = 1, **kwargs):
         super().__init__(model_name, model_type=kwargs.get("model_type", "chat"), prompt_price=0, completion_price=0)
         torch_dtype = torch.bfloat16 if kwargs.get("torch_dtype", "float32") == "bfloat16" else torch.float16
 
@@ -321,7 +322,7 @@ class HFGPU(Chat):
             self.conv_template = get_conv_template(conv_template)
         self.disable_sys_prompt = disable_sys_prompt
 
-        self.batch_size = 16
+        self.batch_size = batch_size
 
     def post_process_generation(self, generation: str):
         if self.conv_template and self.conv_template.stop_str:
@@ -420,9 +421,7 @@ class HFGPU(Chat):
             x["prompt"] = prompt
             return x
         
-        print('Begin processing dataset', dataset[0])
         processed_dataset = [get_prompt(x) for x in dataset]
-        print('End processing dataset', processed_dataset[0])
 
         for batch in tqdm(range(0, len(dataset), self.batch_size)):
             batch_dataset = processed_dataset[batch:batch+self.batch_size]
@@ -434,7 +433,6 @@ class HFGPU(Chat):
                 output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1, do_sample=False)
 
             batch_pred = self.tokenizer.batch_decode(output[:, tokenized_batch["input_ids"].shape[1]:], skip_special_tokens=True)
-            print('Batch prediction', batch_pred[0])
 
             for i, x in enumerate(batch_pred):
                 pred = x.lower()
@@ -447,7 +445,6 @@ class HFGPU(Chat):
                 if pred.find("<|im_end|>") != -1:
                     pred = pred.split("<|im_end|>")[0]
                 pred = pred.strip('\n ')
-                print('Pred', pred)
 
                 # We consider if the model generates explanations after the answer choice.
                 pre = pred.split(".")[0].strip()
@@ -455,10 +452,6 @@ class HFGPU(Chat):
                 pre = pre.split("\n")[0].strip()
                 cache.append((processed_dataset[batch+i]['prompt'], x))
 
-                print('Pre', pre, 'Label', label)
-
-                print('Option', option)
-                print('In option?', (pred in option), (pre in option))
                 if (pred == label) or (pre == label):
                     acc += 1
                 elif (pred not in option) and (pre not in option):

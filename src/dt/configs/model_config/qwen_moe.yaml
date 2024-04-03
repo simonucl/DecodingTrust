@@ -1,4 +1,4 @@
-model: "hf/Qwen/Qwen1.5-MoE-A2.7B-Chat"
+model: "hf-gpu/Qwen/Qwen1.5-MoE-A2.7B-Chat"
 type: CHAT
 conv_template: "qwen"
 
@@ -8,3 +8,4 @@ quant_file: null
 tokenizer_name: null
 trust_remote_code: true
 use_auth_token: true
+batch_size: 16

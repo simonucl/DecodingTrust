@@ -139,7 +139,7 @@ class ModelConfig:
     quant_file: Optional[str] = None
     tokenizer_name: Optional[str] = None
     device_map: Optional[str] = "auto"
-
+    batch_size: Optional[int] = 1
 
 @dataclass
 class BaseConfig:
