@@ -48,6 +48,7 @@ class Chat(ABC):
         if model_name.lower().startswith("openai/"):
             return OpenAIChat(model_name, **kwargs)
         elif model_name.startswith('hf-gpu/'):
+            kwargs.pop("api_key")
             return HFGPU(model_name.removeprefix("hf-gpu/").rstrip("/"), **kwargs)
         elif model_name.startswith("hf/"):
             kwargs.pop("api_key")
