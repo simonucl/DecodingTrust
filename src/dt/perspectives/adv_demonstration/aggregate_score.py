@@ -4,7 +4,7 @@ from glob import glob
 
 import numpy as np
 import argparse
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 
 
 def refuse(x):
@@ -53,6 +53,9 @@ def test(cache, dataset):
 
 def read(data_path, cache_path):
     dataset = load_dataset("AI-Secure/DecodingTrust", name="adv_demonstration", data_files=[data_path.split('./data/')[-1]])
+    # check if isinstance(dataset, DatasetDict)
+    if isinstance(dataset, DatasetDict):
+        dataset = dataset["train"]
     try:
         cache = json.load(open(cache_path))
         if isinstance(cache, dict):
