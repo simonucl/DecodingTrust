@@ -297,7 +297,7 @@ class Chat(ABC):
         }).to_dict()
 
 class HFGPU(Chat):
-    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, device_map: str = "auto", **kwargs):
+    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = True, device_map: str = "auto", **kwargs):
         super().__init__(model_name, model_type=kwargs.get("model_type", "chat"), prompt_price=0, completion_price=0)
         torch_dtype = torch.bfloat16 if kwargs.get("torch_dtype", "float32") == "bfloat16" else torch.float16
 
