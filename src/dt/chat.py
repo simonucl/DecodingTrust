@@ -411,8 +411,10 @@ class HFGPU(Chat):
                 messages.append({"role": "user", "content": x["input"]})
             return self.messages_to_prompt(messages)
         
-        processed_dataset = [self.messages_to_prompt(x) for x in dataset]
-
+        print('Begin processing dataset', dataset[0])
+        processed_dataset = [get_prompt(x) for x in dataset]
+        print('End processing dataset', processed_dataset[0])
+        
         for batch in tqdm(0, len(processed_dataset), self.batch_size, desc="Processing dataset"):
             batch_dataset = processed_dataset[batch:batch+self.batch_size]
             
