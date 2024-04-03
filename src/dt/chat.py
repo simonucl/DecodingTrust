@@ -425,7 +425,7 @@ class HFGPU(Chat):
             tokenized_batch = self.tokenizer(batch_prompt, padding=True, return_tensors="pt").to(self.model.device)
             
             with torch.no_grad():
-                output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1, temperature=0)
+                output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1, do_sample=False)
 
             batch_pred = self.tokenizer.batch_decode(output, skip_special_tokens=True)
             print('Batch prediction', batch_pred[0])
