@@ -449,6 +449,8 @@ class HFGPU(Chat):
                 pre = pre.split("\n")[0].strip()
                 cache.append((processed_dataset[batch+i]['prompt'], x))
 
+                print('Pred', pred, 'Label', label)
+                print('Option', option)
                 if pred == label or pre == label:
                     acc += 1
                 elif pred not in option and pre not in option:
