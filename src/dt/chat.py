@@ -437,8 +437,7 @@ class HFGPU(Chat):
             print('Batch prediction', batch_pred[0])
 
             for i, x in enumerate(batch_pred):
-                gen = x[len(batch_prompt[i]):]
-                pred = gen.lower()
+                pred = x.lower()
                 label = batch_dataset[i]["label"]
                 option = batch_dataset[i]["option"]
                 if pred.startswith("answer:"):
