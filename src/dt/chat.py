@@ -440,7 +440,7 @@ class HFGPU(Chat):
                     pred = pred.split("</s>")[0]
                 if pred.find("<|im_end|>") != -1:
                     pred = pred.split("<|im_end|>")[0]
-                pred = pred.strip()
+                pred = pred.strip('\n ')
                 print(pred)
 
                 # We consider if the model generates explanations after the answer choice.
