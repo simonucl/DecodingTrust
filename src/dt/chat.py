@@ -297,13 +297,14 @@ class Chat(ABC):
         }).to_dict()
 
 class HFGPU(Chat):
-    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, **kwargs):
+    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, device_map: str = "auto", **kwargs):
         super().__init__(model_name, model_type=kwargs.get("model_type", "chat"), prompt_price=0, completion_price=0)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name, 
             attn_implementation="flash_attention_2",
-            **kwargs
+            torch_dtype=kwargs.get("model_dtype", "float32"),
+            device_map=device_map
             )
         self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "left"
