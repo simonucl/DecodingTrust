@@ -6,14 +6,16 @@ import json
 
 
 def main(args):
-    if args.adv_demonstration.path.startswith("./data/adv_demonstration/counterfactual/"):
-        counterfactual_main(args)
-    elif args.adv_demonstration.path.startswith("./data/adv_demonstration/spurious/"):
-        spurious_main(args)
-    elif args.adv_demonstration.path.startswith("./data/adv_demonstration/backdoor/"):
-        backdoor_main(args)
-    else:
-        raise ValueError
+    # if args.adv_demonstration.path.startswith("./data/adv_demonstration/counterfactual/"):
+    #     counterfactual_main(args)
+    # elif args.adv_demonstration.path.startswith("./data/adv_demonstration/spurious/"):
+    #     spurious_main(args)
+    # elif args.adv_demonstration.path.startswith("./data/adv_demonstration/backdoor/"):
+    #     backdoor_main(args)
+    # else:
+    #     raise ValueError
+    print('Calculating scores...')
+
     score = {}
     model = args.model_config.model
     score["counterfactual"] = counterfactual_score(model)
