@@ -441,7 +441,7 @@ class HFGPU(Chat):
                 if pred.find("<|im_end|>") != -1:
                     pred = pred.split("<|im_end|>")[0]
                 pred = pred.strip('\n ')
-                print(pred)
+                print('Pred', pred)
 
                 # We consider if the model generates explanations after the answer choice.
                 pre = pred.split(".")[0].strip()
@@ -449,7 +449,8 @@ class HFGPU(Chat):
                 pre = pre.split("\n")[0].strip()
                 cache.append((processed_dataset[batch+i]['prompt'], x))
 
-                print('Pred', pred, 'Label', label)
+                print('Pre', pre, 'Label', label)
+                
                 print('Option', option)
                 print('In option?', (pred in option), (pre in option))
                 if (pred == label) or (pre == label):
