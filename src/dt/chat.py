@@ -7,7 +7,7 @@ from dt.utils import timeout
 from abc import ABC, abstractmethod
 from typing import List, Dict, Union
 from helm.common.request import Request
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from dt.conversation import get_conv_template
 from dt.configs.template_config.chat_template import get_chat_template
 from dt.configs.configs import BaseConfig
@@ -15,7 +15,7 @@ from helm.proxy.clients.auto_client import AutoClient
 from helm.proxy.clients.huggingface_model_registry import HuggingfaceModelQuantizationConfig
 from helm.proxy.clients.huggingface_model_registry import ModelLoader, WeightType
 from dt.response import Response
-
+import torch
 
 class Chat(ABC):
     def __init__(self, model_name, model_type: str, prompt_price: float, completion_price: float):
@@ -47,6 +47,8 @@ class Chat(ABC):
         model_name: str = main_config.model_config.model
         if model_name.lower().startswith("openai/"):
             return OpenAIChat(model_name, **kwargs)
+        elif model_name.startswith('hf-gpu/'):
+            return HFGPU(model_name.removeprefix("hf-gpu/").rstrip("/"), **kwargs)
         elif model_name.startswith("hf/"):
             kwargs.pop("api_key")
             return HFChat(model_name.removeprefix("hf/").rstrip("/"), **kwargs)
@@ -292,6 +294,160 @@ class Chat(ABC):
                 "total_tokens": self.num_tokens_from_messages(messages, self.model_name) + max_tokens * n
             }
         }).to_dict()
+
+class HFGPU(Chat):
+    def __init__(self, model_name: str, conv_template: str, chat_template: str, cache: str, disable_sys_prompt: None = False, **kwargs):
+        super().__init__(model_name, model_type=kwargs.get("model_type", "chat"), prompt_price=0, completion_price=0)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name, 
+            attn_implementation="flash_attention_2",
+            **kwargs
+            )
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = "left"
+        self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+        if conv_template is None:
+            self.conv_template = None
+            if chat_template is not None:
+                chat_template = get_chat_template(chat_template)
+                if chat_template is not None:
+                    self.tokenizer.chat_template = chat_template
+        else:
+            self.conv_template = get_conv_template(conv_template)
+        self.disable_sys_prompt = disable_sys_prompt
+
+        self.batch_size = 16
+
+    def messages_to_prompt(self, messages: Union[List[Dict], str]):
+        if isinstance(messages, str):
+            return messages  # Override prompt templates / simply use as the prompt for completion model
+
+        if self.conv_template is not None:
+            conv = self.conv_template.copy()
+            for message in messages:
+                if "name" in message:
+                    warnings.warn("'name' argument is not supported.")
+                msg_role = message["role"]
+                if msg_role == "system":
+                    if self.disable_sys_prompt:
+                        warnings.warn("User system prompt ignored! Using default system prompt instead.")
+                    else:
+                        conv.system = message["content"]
+                elif msg_role == "user":
+                    conv.append_message(conv.roles[0], message["content"])
+                elif msg_role == "assistant":
+                    conv.append_message(conv.roles[1], message["content"])
+                else:
+                    raise ValueError(f"Unknown role: {msg_role}")
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()  # Prompt generated from the selected template
+        else:
+            chat = []
+            previous_role = ''
+            for message in messages:
+                if "name" in message:
+                    warnings.warn("'name' argument is not supported.")
+                msg_role = message["role"]
+                if msg_role == "system":
+                    if self.disable_sys_prompt:
+                        warnings.warn("User system prompt ignored! Using default system prompt instead.")
+                    else:
+                        chat.append(message)
+                elif msg_role == "user" or msg_role == "assistant":
+                    if msg_role == previous_role:
+                        chat[-1]["content"] += message["content"]
+                    else:
+                        chat.append({"role": msg_role, "content": message["content"]})
+                    previous_role = msg_role
+                else:
+                    raise ValueError(f"Unknown role: {msg_role}")
+            prompt = self.tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+        return prompt
+    
+    def do_classification(self, dataset, task_message, example_prefix=False, dry_run=False, max_tokens=20):
+        """
+        Do classification (zero-shot or in-context learning by calling `openai.ChatCompletion.create`. Args: dataset
+        (`List[Dict]`): test dataset to evaluate. Each item should be a dict containing the following keys: `input`:
+        text input of the test instance `label`: label of the instance `option`: candidate label choices of the task
+        `examples` (`List[Tuple]`): demonstration examples (text, label). Set as `[]` for zero-shot evaluation.
+        Please refer to `example_snli` for more information. task_message (`String`): task description for the test
+        dataset (`dataset`). It should contain the answer choice. example_prefix (`Bool`): Whether to put the
+        demonstration examples into the `system` messages. Only work for in-context learning. May set
+        `example_prefix=True` when evaluating GPT-4.
+        """
+        cache = []
+        acc = 0
+        unknown = 0
+        cost = 0
+        prompt_tokens = 0
+        cont_tokens = 0
+
+        def get_prompt(x):
+            if len(x["examples"]) == 0:
+                messages = [{"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": task_message + "\n" + x["input"]}]
+            else:
+                if example_prefix:
+                    messages = [{"role": "system",
+                                    "content": "You are a helpful, pattern-following assistant. " + task_message}]
+                else:
+                    messages = [{"role": "system", "content": "You are a helpful, pattern-following assistant."},
+                                {"role": "user", "content": task_message},
+                                {"role": "assistant", "content": "Sure, I'd be happy to!"}]
+
+                for y in x["examples"]:
+                    if example_prefix:
+                        messages.append({"role": "system", "name": "example_user", "content": y[0]})
+                        messages.append(
+                            {"role": "system", "name": "example_assistant", "content": y[1].capitalize()}),
+                    else:
+                        messages.append({"role": "user", "content": y[0]})
+                        messages.append({"role": "assistant", "content": y[1].capitalize()}),
+                messages.append({"role": "user", "content": x["input"]})
+            return self.messages_to_prompt(messages)
+        
+        processed_dataset = [self.messages_to_prompt(x) for x in dataset]
+
+        for batch in tqdm(0, len(processed_dataset), self.batch_size, desc="Processing dataset"):
+            batch_dataset = processed_dataset[batch:batch+self.batch_size]
+            
+            tokenized_batch = self.tokenizer(batch_dataset, padding=True, return_tensors="pt").to(self.model.device)
+            
+            with torch.no_grad():
+                output = self.model(**tokenized_batch, max_length=max_tokens)
+
+            batch_pred = self.tokenizer.batch_decode(output.logits.argmax(dim=-1), skip_special_tokens=True).tolist()
+            for i, x in enumerate(batch_pred):
+                pred = x.lower()
+                if pred.startswith("answer:"):
+                    pred = pred[7:]
+                if pred.find("</s>") != -1:
+                    pred = pred.split("</s>")[0]
+                if pred.find("<|im_end|>") != -1:
+                    pred = pred.split("<|im_end|>")[0]
+                pred = pred.strip()
+                print(pred)
+
+                # We consider if the model generates explanations after the answer choice.
+                pre = pred.split(".")[0].strip()
+                pre = pre.split(",")[0].strip()
+                pre = pre.split("\n")[0].strip()
+                if pred == x["label"] or pre == x["label"]:
+                    acc += 1
+                elif pred not in x["option"] and pre not in x["option"]:
+                    unknown += 1
+
+        return acc / len(dataset), unknown, (cost, prompt_tokens, cont_tokens), cache
+
+    def do_generation(self, dataset, message_constructor, n=1, t=1, max_tokens=150, dry_run=False):
+        pass
+
+    def _call(self, messages, t=0, max_tokens=20, n=1, batch_size=1):
+        pass
+
+    def call(self, messages, t=0, retry=1000, max_tokens=20, n=1, dry_run=False, batch_size=1):
+        pass
 
 
 class OpenAIChat(Chat):
