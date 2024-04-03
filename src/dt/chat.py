@@ -425,7 +425,7 @@ class HFGPU(Chat):
             tokenized_batch = self.tokenizer(batch_prompt, padding=True, return_tensors="pt").to(self.model.device)
             
             with torch.no_grad():
-                output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1)
+                output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1, temperature=0)
 
             batch_pred = self.tokenizer.batch_decode(output, skip_special_tokens=True)
             print('Batch prediction', batch_pred[0])
@@ -450,7 +450,7 @@ class HFGPU(Chat):
                 cache.append((processed_dataset[batch+i]['prompt'], x))
 
                 print('Pre', pre, 'Label', label)
-                
+
                 print('Option', option)
                 print('In option?', (pred in option), (pre in option))
                 if (pred == label) or (pre == label):
