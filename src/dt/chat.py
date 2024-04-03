@@ -451,9 +451,10 @@ class HFGPU(Chat):
 
                 print('Pred', pred, 'Label', label)
                 print('Option', option)
-                if pred == label or pre == label:
+                print('In option?', (pred in option), (pre in option))
+                if (pred == label) or (pre == label):
                     acc += 1
-                elif pred not in option and pre not in option:
+                elif (pred not in option) and (pre not in option):
                     unknown += 1
 
         return acc / len(dataset), unknown, (cost, prompt_tokens, cont_tokens), cache
