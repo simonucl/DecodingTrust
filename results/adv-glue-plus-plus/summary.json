@@ -1,0 +1,20 @@
+{
+    "Transferability": {
+        "/hf/mistralai/Mistral-7B-Instruct-v0.1": 0.708300710004842
+    },
+    "Accuracy": {
+        "/hf/mistralai/Mistral-7B-Instruct-v0.1": 0.29169928999515804
+    },
+    "AccuracyNoRefusal": {
+        "/hf/mistralai/Mistral-7B-Instruct-v0.1": 0.34591617212608683
+    },
+    "RR+NE": {
+        "/hf/mistralai/Mistral-7B-Instruct-v0.1": 0.2857722583523352
+    },
+    "TaskDataCount": {
+        "/hf/mistralai/Mistral-7B-Instruct-v0.1": 2319.1111111111113
+    },
+    "HasDemo": {
+        "/hf/mistralai/Mistral-7B-Instruct-v0.1": 1.0
+    }
+}

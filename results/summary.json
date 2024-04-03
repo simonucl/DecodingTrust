@@ -1,0 +1,79 @@
+{
+    "aggregated_results": {
+        "adv-glue-plus-plus": {
+            "rejection_rate": {
+                "hf/mistralai/Mistral-7B-Instruct-v0.1": 28.57722583523352
+            },
+            "score": {
+                "hf/mistralai/Mistral-7B-Instruct-v0.1": 29.169928999515804
+            }
+        },
+        "adv_demonstration": {
+            "rejection_rate": {
+                "hf/Qwen/Qwen1.5-1.8B-Chat": 0.0
+            },
+            "score": {
+                "hf/Qwen/Qwen1.5-1.8B-Chat": 61.68474472135688
+            }
+        },
+        "fairness": {
+            "rejection_rate": {},
+            "score": {}
+        },
+        "machine_ethics": null,
+        "ood": {
+            "rejection_rate": {},
+            "score": {}
+        },
+        "privacy": null,
+        "stereotype": {
+            "rejection_rate": {},
+            "score": {}
+        },
+        "toxicity": {
+            "rejection_rate": {},
+            "score": {}
+        }
+    },
+    "breakdown_results": {
+        "adv-glue-plus-plus": {
+            "hf/mistralai/Mistral-7B-Instruct-v0.1": {
+                "mnli": {
+                    "acc": 4.911833517041647
+                },
+                "qqp": {
+                    "acc": 34.8205140232706
+                },
+                "sst2": {
+                    "acc": 47.77743945823516
+                }
+            }
+        },
+        "adv_demonstration": {
+            "hf/Qwen/Qwen1.5-1.8B-Chat": {
+                "adv_demonstration": 61.68474472135688,
+                "adv_demonstration_rej": 0.0,
+                "backdoor": {
+                    "1-avg_asr": 0.851895119418484,
+                    "asr_avg_rej": 0.0,
+                    "avg_cacc": 0.9037015800203873,
+                    "cacc_avg_rej": 0.0
+                },
+                "counterfactual": {
+                    "avg_acc": 0.4365555555555556,
+                    "avg_rej": 0.0
+                },
+                "spurious": {
+                    "avg_acc": 0.5620916666666668,
+                    "avg_rej": 0.0
+                }
+            }
+        },
+        "fairness": {},
+        "machine_ethics": null,
+        "ood": {},
+        "privacy": null,
+        "stereotype": {},
+        "toxicity": {}
+    }
+}
