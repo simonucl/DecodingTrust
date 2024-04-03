@@ -409,7 +409,10 @@ class HFGPU(Chat):
                         messages.append({"role": "user", "content": y[0]})
                         messages.append({"role": "assistant", "content": y[1].capitalize()}),
                 messages.append({"role": "user", "content": x["input"]})
-            return self.messages_to_prompt(messages)
+            prompt = self.messages_to_prompt(messages)
+            x.pop("examples")
+            x["prompt"] = prompt
+            return x
         
         print('Begin processing dataset', dataset[0])
         processed_dataset = [get_prompt(x) for x in dataset]
@@ -417,18 +420,20 @@ class HFGPU(Chat):
 
         for batch in tqdm(range(0, len(dataset), self.batch_size)):
             batch_dataset = processed_dataset[batch:batch+self.batch_size]
-            
-            tokenized_batch = self.tokenizer(batch_dataset, padding=True, return_tensors="pt").to(self.model.device)
+            batch_prompt = [x["prompt"] for x in batch_dataset]
+
+            tokenized_batch = self.tokenizer(batch_prompt, padding=True, return_tensors="pt").to(self.model.device)
             
             with torch.no_grad():
                 output = self.model.generate(**tokenized_batch, max_new_tokens=max_tokens, num_return_sequences=1)
-
 
             batch_pred = self.tokenizer.batch_decode(output, skip_special_tokens=True)
             print('Batch prediction', batch_pred[0])
 
             for i, x in enumerate(batch_pred):
                 pred = x.lower()
+                label = batch_dataset[i]["label"]
+                option = batch_dataset[i]["option"]
                 if pred.startswith("answer:"):
                     pred = pred[7:]
                 if pred.find("</s>") != -1:
@@ -442,9 +447,11 @@ class HFGPU(Chat):
                 pre = pred.split(".")[0].strip()
                 pre = pre.split(",")[0].strip()
                 pre = pre.split("\n")[0].strip()
-                if pred == x["label"] or pre == x["label"]:
+                cache.append((processed_dataset[batch+i]['prompt'], x))
+
+                if pred == label or pre == label:
                     acc += 1
-                elif pred not in x["option"] and pre not in x["option"]:
+                elif pred not in option and pre not in option:
                     unknown += 1
 
         return acc / len(dataset), unknown, (cost, prompt_tokens, cont_tokens), cache
