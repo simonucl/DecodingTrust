@@ -47,13 +47,13 @@ class Chat(ABC):
         model_name: str = main_config.model_config.model
         if model_name.lower().startswith("openai/"):
             return OpenAIChat(model_name, **kwargs)
-        elif model_name.startswith('hf-gpu/'):
+        elif model_name.startswith('hf/'):
             kwargs.pop("api_key")
             kwargs['batch_size'] = main_config.model_config.batch_size
             return HFGPU(model_name.removeprefix("hf-gpu/").rstrip("/"), **kwargs)
-        elif model_name.startswith("hf/"):
-            kwargs.pop("api_key")
-            return HFChat(model_name.removeprefix("hf/").rstrip("/"), **kwargs)
+        # elif model_name.startswith("hf/"):
+        #     kwargs.pop("api_key")
+        #     return HFChat(model_name.removeprefix("hf/").rstrip("/"), **kwargs)
         elif model_name.startswith("together/"):
             return TogetherChat(model_name, **kwargs)
         elif model_name.startswith("anthropic/"):

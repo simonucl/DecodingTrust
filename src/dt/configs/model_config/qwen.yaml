@@ -1,4 +1,4 @@
-model: "hf-gpu/Qwen/Qwen1.5-1.8B-Chat"
+model: "hf/Qwen/Qwen1.5-1.8B-Chat"
 type: CHAT
 conv_template: "qwen"
 
