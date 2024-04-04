@@ -28,7 +28,10 @@ def test(cache, dataset):
     ref = 0
     for x, y in zip(cache, dataset):
         response = x[1]
-        pred = response['choices'][0]['message']['content']
+        if isinstance(response, str):
+            pred = response
+        else:
+            pred = response['choices'][0]['message']['content']
         pred = pred.lower()
         if pred.startswith("answer:"):
             pred = pred[7:]
