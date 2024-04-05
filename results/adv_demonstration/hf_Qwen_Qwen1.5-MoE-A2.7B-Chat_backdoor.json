@@ -1,1 +1,1 @@
-{}
+{"badword_setup1_cacc/42": [0.9357798165137615, 0.0], "badword_setup1_cacc/2333": [0.8463302752293578, 0.0], "badword_setup1_cacc/10007": [0.9174311926605505, 0.0], "badword_setup1_cacc": {"score": 0.8998470948012232, "rej": 0.0}, "badword_setup1_asr/42": [0.1939252336448598, 0.0], "badword_setup1_asr/2333": [0.8107476635514018, 0.0], "badword_setup1_asr/10007": [0.21962616822429906, 0.0], "badword_setup1_asr": {"score": 0.4080996884735202, "rej": 0.0}}
